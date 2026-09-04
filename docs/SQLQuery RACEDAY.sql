@@ -190,3 +190,13 @@ CREATE TABLE Result
         CHECK (FinishingPosition > 0)
 );
 GO
+
+ -- EVENT TYPES --
+ 
+
+INSERT INTO EventType (TypeName)
+VALUES
+    ('Run'),
+    ('Walk'),
+    ('Cycle');
+GO
