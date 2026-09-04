@@ -347,3 +347,19 @@ VALUES
 (1, '00:52:31', 47),
 (2, '00:55:18', 62);
 GO
+
+ --VERIFICATION QUERIES--
+
+
+SELECT * FROM [User];
+
+SELECT * FROM EventType;
+
+SELECT * FROM Event;
+
+SELECT * FROM Category;
+
+SELECT * FROM Enrolment;
+
+SELECT * FROM Result;
+GO
