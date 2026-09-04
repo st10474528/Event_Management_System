@@ -124,3 +124,42 @@ CREATE TABLE Category
         UNIQUE (EventID, CategoryName)
 );
 GO
+
+-- ENROLMENT TABLE --
+  
+
+CREATE TABLE Enrolment
+(
+    EnrolmentID INT IDENTITY(1,1) PRIMARY KEY,
+
+    ParticipantID INT NOT NULL,
+
+    EventID INT NOT NULL,
+
+    CategoryID INT NOT NULL,
+
+    EnrolmentDate DATETIME2 NOT NULL
+        CONSTRAINT DF_Enrolment_Date DEFAULT SYSDATETIME(),
+
+    Status NVARCHAR(20) NOT NULL
+        CONSTRAINT DF_Enrolment_Status DEFAULT 'Pending',
+
+    CONSTRAINT FK_Enrolment_Participant
+        FOREIGN KEY (ParticipantID)
+        REFERENCES [User](UserID),
+
+    CONSTRAINT FK_Enrolment_Event
+        FOREIGN KEY (EventID)
+        REFERENCES Event(EventID),
+
+    CONSTRAINT FK_Enrolment_Category
+        FOREIGN KEY (CategoryID)
+        REFERENCES Category(CategoryID),
+
+    CONSTRAINT CK_Enrolment_Status
+        CHECK (Status IN ('Pending', 'Confirmed', 'Cancelled')),
+
+    CONSTRAINT UQ_Enrolment_Participant_Event
+        UNIQUE (ParticipantID, EventID)
+);
+GO
