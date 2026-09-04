@@ -82,3 +82,45 @@ CREATE TABLE Event
         CHECK (Distance > 0)
 );
 GO
+  -- CATEGORY TABLE --
+   
+
+CREATE TABLE Category
+(
+    CategoryID INT IDENTITY(1,1) PRIMARY KEY,
+
+    EventID INT NOT NULL,
+
+    CategoryName NVARCHAR(100) NOT NULL,
+
+    MinimumAge INT NULL,
+
+    MaximumAge INT NULL,
+
+    Distance DECIMAL(6,2) NULL,
+
+    CONSTRAINT FK_Category_Event
+        FOREIGN KEY (EventID)
+        REFERENCES Event(EventID)
+        ON DELETE CASCADE,
+
+    CONSTRAINT CK_Category_MinimumAge
+        CHECK (MinimumAge IS NULL OR MinimumAge >= 0),
+
+    CONSTRAINT CK_Category_MaximumAge
+        CHECK (MaximumAge IS NULL OR MaximumAge >= 0),
+
+    CONSTRAINT CK_Category_AgeRange
+        CHECK (
+            MinimumAge IS NULL
+            OR MaximumAge IS NULL
+            OR MinimumAge <= MaximumAge
+        ),
+
+    CONSTRAINT CK_Category_Distance
+        CHECK (Distance IS NULL OR Distance > 0),
+
+    CONSTRAINT UQ_Category_Event_Name
+        UNIQUE (EventID, CategoryName)
+);
+GO
