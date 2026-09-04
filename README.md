@@ -397,6 +397,8 @@ Role descriptions
 
 CI/CD screenshot
 
+<img width="1582" height="178" alt="Screenshot 2026-09-04 193248" src="https://github.com/user-attachments/assets/c8358d86-1b05-46d3-8501-62916f869c22" />
+
 YouTube video link
 
 
