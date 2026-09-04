@@ -292,3 +292,26 @@ VALUES
     50.00
 );
 GO
+
+-- CATEGORIES --
+
+
+INSERT INTO Category
+(
+    EventID,
+    CategoryName,
+    MinimumAge,
+    MaximumAge,
+    Distance
+)
+VALUES
+(1, 'Under 20', 13, 19, 10.00),
+(1, 'Senior', 20, 39, 10.00),
+(1, 'Veteran', 40, NULL, 10.00),
+
+(2, 'Under 20', 13, 19, 5.00),
+(2, 'Senior', 20, 39, 5.00),
+
+(3, 'Under 20', 16, 19, 50.00),
+(3, 'Senior', 20, 39, 50.00);
+GO
