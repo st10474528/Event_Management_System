@@ -1,0 +1,433 @@
+# ====================================================================
+# RaceDay Part 1 - CI/CD Workflow
+# File: .github/workflows/validate-docs.yml
+# Purpose: Validate all documentation for Part 1 submission
+# ====================================================================
+
+name: Validate Documentation
+
+# Trigger on pushes to main/develop and pull requests
+on:
+  push:
+    branches: [ main, develop, master ]
+  pull_request:
+    branches: [ main ]
+
+# Job definitions
+jobs:
+  # ====================================================================
+  # JOB 1: Validate Documentation Structure
+  # ====================================================================
+  validate-docs:
+    name: 📄 Validate Documentation
+    runs-on: ubuntu-latest
+    
+    steps:
+    # Step 1: Checkout code
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Fetch all history for commit count check
+    
+    # Step 2: Verify docs folder
+    - name: 📁 Verify /docs folder exists
+      run: |
+        echo "🔍 Checking for /docs folder..."
+        if [ ! -d "docs" ]; then
+          echo "❌ ERROR: /docs folder not found!"
+          echo "📝 Create a docs folder and add your documentation files."
+          exit 1
+        fi
+        echo "✅ /docs folder found"
+        ls -la docs/
+    
+    # Step 3: Check ERD diagram
+    - name: 🖼️ Check ERD diagram
+      run: |
+        echo "🔍 Checking for ERD diagram..."
+        if [ ! -f "docs/ERD.png" ] && [ ! -f "docs/ERD.pdf" ] && [ ! -f "docs/ERD.jpg" ]; then
+          echo "❌ ERROR: ERD diagram not found!"
+          echo "📝 Required formats: PNG, PDF, or JPG"
+          echo "📝 File must be named: ERD.png, ERD.pdf, or ERD.jpg"
+          exit 1
+        fi
+        
+        # Check file size (must not be empty)
+        if [ -f "docs/ERD.png" ]; then
+          FILE_SIZE=$(stat -c%s "docs/ERD.png")
+          if [ $FILE_SIZE -lt 1000 ]; then
+            echo "❌ ERROR: ERD.png file is too small (${FILE_SIZE} bytes). It may be empty or corrupted."
+            exit 1
+          fi
+          echo "✅ ERD.png found (${FILE_SIZE} bytes)"
+        elif [ -f "docs/ERD.pdf" ]; then
+          FILE_SIZE=$(stat -c%s "docs/ERD.pdf")
+          echo "✅ ERD.pdf found (${FILE_SIZE} bytes)"
+        else
+          echo "✅ ERD found"
+        fi
+    
+    # Step 4: Check API endpoint plan
+    - name: 📋 Check API endpoint plan
+      run: |
+        echo "🔍 Checking for API endpoint plan..."
+        if [ ! -f "docs/API-Endpoint-Plan.md" ] && [ ! -f "docs/API-Endpoint-Plan.pdf" ]; then
+          echo "❌ ERROR: API endpoint plan not found!"
+          echo "📝 Required formats: Markdown or PDF"
+          echo "📝 File must be named: API-Endpoint-Plan.md or API-Endpoint-Plan.pdf"
+          exit 1
+        fi
+        
+        # Validate content for Markdown
+        if [ -f "docs/API-Endpoint-Plan.md" ]; then
+          # Check for required sections
+          if ! grep -q "HTTP Method" docs/API-Endpoint-Plan.md; then
+            echo "❌ ERROR: API endpoint plan missing required column: HTTP Method"
+            exit 1
+          fi
+          if ! grep -q "Route" docs/API-Endpoint-Plan.md; then
+            echo "❌ ERROR: API endpoint plan missing required column: Route"
+            exit 1
+          fi
+          if ! grep -q "Description" docs/API-Endpoint-Plan.md; then
+            echo "❌ ERROR: API endpoint plan missing required column: Description"
+            exit 1
+          fi
+          if ! grep -q "Role Required" docs/API-Endpoint-Plan.md; then
+            echo "❌ ERROR: API endpoint plan missing required column: Role Required"
+            exit 1
+          fi
+          echo "✅ API-Endpoint-Plan.md found with all required columns"
+        else
+          echo "✅ API-Endpoint-Plan.pdf found"
+        fi
+    
+    # Step 5: Check SQL script
+    - name: 💾 Check SQL script
+      run: |
+        echo "🔍 Checking for SQL script..."
+        if [ ! -f "docs/RaceDay-Database.sql" ]; then
+          echo "❌ ERROR: SQL script not found!"
+          echo "📝 File must be named: RaceDay-Database.sql"
+          exit 1
+        fi
+        echo "✅ RaceDay-Database.sql found"
+    
+    # Step 6: Check README
+    - name: 📖 Check README
+      run: |
+        echo "🔍 Checking for README.md..."
+        if [ ! -f "README.md" ]; then
+          echo "❌ ERROR: README.md not found!"
+          echo "📝 Create a README.md file in the root directory"
+          exit 1
+        fi
+        echo "✅ README.md found"
+    
+    # Step 7: Check for .gitignore
+    - name: 🔒 Check .gitignore
+      run: |
+        echo "🔍 Checking for .gitignore..."
+        if [ ! -f ".gitignore" ]; then
+          echo "⚠️ WARNING: .gitignore not found. Recommended for version control best practices."
+        else
+          echo "✅ .gitignore found"
+        fi
+
+  # ====================================================================
+  # JOB 2: Validate SQL Script Content
+  # ====================================================================
+  validate-sql:
+    name: 💾 Validate SQL Script
+    runs-on: ubuntu-latest
+    needs: validate-docs  # Runs after validate-docs succeeds
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v3
+    
+    - name: 🔍 Validate SQL script syntax and content
+      run: |
+        echo "🔍 Analyzing SQL script..."
+        
+        # Check for CREATE DATABASE
+        if ! grep -q "CREATE DATABASE" docs/RaceDay-Database.sql; then
+          echo "❌ ERROR: SQL script missing CREATE DATABASE statement"
+          exit 1
+        fi
+        echo "✅ CREATE DATABASE found"
+        
+        # Count tables and verify minimum
+        TABLE_COUNT=$(grep -c "CREATE TABLE" docs/RaceDay-Database.sql)
+        echo "📊 Found ${TABLE_COUNT} tables"
+        
+        if [ $TABLE_COUNT -lt 6 ]; then
+          echo "❌ ERROR: Only ${TABLE_COUNT} tables found. Minimum requirement: 6"
+          echo "📝 You need at least 6 entities in your database"
+          exit 1
+        fi
+        echo "✅ Table count meets minimum requirement (${TABLE_COUNT} >= 6)"
+        
+        # Check for PRIMARY KEY
+        if ! grep -q "PRIMARY KEY" docs/RaceDay-Database.sql; then
+          echo "⚠️ WARNING: No PRIMARY KEY constraints found"
+        else
+          echo "✅ PRIMARY KEY constraints found"
+        fi
+        
+        # Check for FOREIGN KEY
+        if ! grep -q "FOREIGN KEY" docs/RaceDay-Database.sql; then
+          echo "⚠️ WARNING: No FOREIGN KEY constraints found"
+          echo "📝 It's recommended to define relationships with FOREIGN KEY"
+        else
+          FK_COUNT=$(grep -c "FOREIGN KEY" docs/RaceDay-Database.sql)
+          echo "✅ FOREIGN KEY constraints found (${FK_COUNT} references)"
+        fi
+        
+        # Check for INSERT statements (sample data)
+        INSERT_COUNT=$(grep -c "INSERT INTO" docs/RaceDay-Database.sql)
+        echo "📝 Found ${INSERT_COUNT} INSERT statements"
+        
+        if [ $INSERT_COUNT -lt 3 ]; then
+          echo "⚠️ WARNING: Only ${INSERT_COUNT} INSERT statements found"
+          echo "📝 Consider adding more sample data"
+        else
+          echo "✅ Sample data included"
+        fi
+        
+        # Check for constraints
+        if ! grep -q "CHECK" docs/RaceDay-Database.sql; then
+          echo "⚠️ WARNING: No CHECK constraints found"
+          echo "📝 Consider adding CHECK constraints for data validation"
+        else
+          echo "✅ CHECK constraints found"
+        fi
+        
+        # Check for DEFAULT values
+        if ! grep -q "DEFAULT" docs/RaceDay-Database.sql; then
+          echo "⚠️ WARNING: No DEFAULT values found"
+          echo "📝 Consider adding DEFAULT values for consistency"
+        else
+          echo "✅ DEFAULT values found"
+        fi
+        
+        # Check for UNIQUE constraints
+        if ! grep -q "UNIQUE" docs/RaceDay-Database.sql; then
+          echo "⚠️ WARNING: No UNIQUE constraints found"
+          echo "📝 Consider adding UNIQUE constraints for data integrity"
+        else
+          echo "✅ UNIQUE constraints found"
+        fi
+        
+        # List all tables found
+        echo ""
+        echo "📋 Tables found in script:"
+        grep "CREATE TABLE" docs/RaceDay-Database.sql | sed 's/.*CREATE TABLE //' | sed 's/ (.*//' | sed 's/.*\.//' | while read table; do
+          echo "  - ${table}"
+        done
+
+  # ====================================================================
+  # JOB 3: Validate API Endpoint Plan Content
+  # ====================================================================
+  validate-api:
+    name: 📋 Validate API Endpoint Plan
+    runs-on: ubuntu-latest
+    needs: validate-docs  # Runs after validate-docs succeeds
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v3
+    
+    - name: 📋 Validate API endpoint plan content
+      run: |
+        echo "🔍 Analyzing API endpoint plan..."
+        
+        # Only validate Markdown files
+        if [ -f "docs/API-Endpoint-Plan.md" ]; then
+          # Check for authentication endpoints
+          if ! grep -q "/api/auth/register" docs/API-Endpoint-Plan.md; then
+            echo "⚠️ WARNING: Register endpoint missing"
+          else
+            echo "✅ Register endpoint found"
+          fi
+          
+          if ! grep -q "/api/auth/login" docs/API-Endpoint-Plan.md; then
+            echo "⚠️ WARNING: Login endpoint missing"
+          else
+            echo "✅ Login endpoint found"
+          fi
+          
+          # Check for event management endpoints
+          if ! grep -q "/api/events" docs/API-Endpoint-Plan.md; then
+            echo "⚠️ WARNING: Event endpoints missing"
+          else
+            EVENT_ENDPOINTS=$(grep -c "/api/events" docs/API-Endpoint-Plan.md)
+            echo "✅ Event endpoints found (${EVENT_ENDPOINTS} references)"
+          fi
+          
+          # Check for categories
+          if ! grep -q "/api/categories" docs/API-Endpoint-Plan.md; then
+            echo "⚠️ WARNING: Category endpoints missing"
+          else
+            echo "✅ Category endpoints found"
+          fi
+          
+          # Check for enrolments
+          if ! grep -q "/api/enrolments" docs/API-Endpoint-Plan.md; then
+            echo "⚠️ WARNING: Enrolment endpoints missing"
+          else
+            echo "✅ Enrolment endpoints found"
+          fi
+          
+          # Check for results
+          if ! grep -q "/api/results" docs/API-Endpoint-Plan.md; then
+            echo "⚠️ WARNING: Results endpoints missing"
+          else
+            echo "✅ Results endpoints found"
+          fi
+          
+          # Count total endpoints (approximate)
+          ENDPOINT_COUNT=$(grep -c "/api/" docs/API-Endpoint-Plan.md)
+          echo "📊 Found approximately ${ENDPOINT_COUNT} endpoint references"
+          
+          if [ $ENDPOINT_COUNT -lt 20 ]; then
+            echo "⚠️ WARNING: Only ${ENDPOINT_COUNT} endpoints found. Expected more."
+          else
+            echo "✅ Good number of endpoints planned"
+          fi
+          
+          # Check for role-based access
+          if ! grep -q "Organiser" docs/API-Endpoint-Plan.md; then
+            echo "⚠️ WARNING: Organiser role not found in endpoints"
+          else
+            echo "✅ Organiser role referenced in endpoints"
+          fi
+          
+          if ! grep -q "Participant" docs/API-Endpoint-Plan.md; then
+            echo "⚠️ WARNING: Participant role not found in endpoints"
+          else
+            echo "✅ Participant role referenced in endpoints"
+          fi
+        else
+          echo "ℹ️ API plan is in PDF format - skipping content validation"
+        fi
+
+  # ====================================================================
+  # JOB 4: Validate Commit History
+  # ====================================================================
+  validate-commits:
+    name: 📊 Validate Commit History
+    runs-on: ubuntu-latest
+    needs: validate-docs  # Runs after validate-docs succeeds
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Fetch all history
+    
+    - name: 📊 Count commits
+      run: |
+        echo "🔍 Analyzing commit history..."
+        
+        # Count total commits
+        TOTAL_COMMITS=$(git log --oneline | wc -l)
+        echo "📊 Total commits: ${TOTAL_COMMITS}"
+        
+        if [ $TOTAL_COMMITS -lt 20 ]; then
+          echo "❌ ERROR: Only ${TOTAL_COMMITS} commits found. Minimum: 20"
+          echo "📝 Make at least 20 meaningful commits for Part 1"
+          exit 1
+        else
+          echo "✅ Commit count meets minimum requirement (${TOTAL_COMMITS} >= 20)"
+        fi
+        
+        # Check for meaningful commit messages (exclude common filler)
+        INVALID_COMMITS=0
+        git log --oneline | while read commit; do
+          if echo "$commit" | grep -qi "typo\|update\|minor\|fix file\|merge"; then
+            INVALID_COMMITS=$((INVALID_COMMITS + 1))
+          fi
+        done
+        
+        echo "📊 Showing last 5 commits:"
+        git log --oneline -5
+
+  # ====================================================================
+  # JOB 5: Final Summary
+  # ====================================================================
+  summary:
+    name: 📊 Summary Report
+    runs-on: ubuntu-latest
+    needs: [validate-docs, validate-sql, validate-api, validate-commits]
+    if: always()  # Run even if some jobs fail
+    
+    steps:
+    - name: 📊 Generate Summary Report
+      run: |
+        echo "========================================="
+        echo "  🏃 RACEDAY PART 1 - SUMMARY REPORT"
+        echo "========================================="
+        echo ""
+        echo "✅ All validation jobs completed!"
+        echo ""
+        echo "📋 Check your submission against this list:"
+        echo ""
+        echo "📁 Documentation Required:"
+        echo "  [ ] /docs/ERD.png or .pdf"
+        echo "  [ ] /docs/API-Endpoint-Plan.md or .pdf"
+        echo "  [ ] /docs/RaceDay-Database.sql"
+        echo "  [ ] README.md"
+        echo "  [ ] .gitignore"
+        echo ""
+        echo "🎯 Minimum Requirements:"
+        echo "  [ ] 6+ entities in database"
+        echo "  [ ] 20+ meaningful commits"
+        echo "  [ ] Sample data (2 organisers, 2 participants, 3 events)"
+        echo "  [ ] Foreign key constraints"
+        echo "  [ ] Green CI/CD build"
+        echo ""
+        echo "📹 Video Requirements:"
+        echo "  [ ] 3-minute video"
+        echo "  [ ] Voiceover (no AI voices)"
+        echo "  [ ] Unlisted YouTube link in README"
+        echo "  [ ] Walk through all documentation"
+        echo ""
+        echo "========================================="
+        echo "  🤖 CI/CD Build Status: ${GITHUB_WORKFLOW}"
+        echo "  🏷️  Run ID: ${GITHUB_RUN_ID}"
+        echo "========================================="
+        
+        # Exit with success if all previous jobs passed
+        if [ "${{ needs.validate-docs.result }}" = "success" ] && \
+           [ "${{ needs.validate-sql.result }}" = "success" ] && \
+           [ "${{ needs.validate-api.result }}" = "success" ] && \
+           [ "${{ needs.validate-commits.result }}" = "success" ]; then
+          echo "🎉 ALL VALIDATION CHECKS PASSED! Ready for submission."
+          exit 0
+        else
+          echo "⚠️ SOME CHECKS FAILED. Review the error messages above."
+          exit 1
+        fi
+
+  # ====================================================================
+  # JOB 6: Slack Notification (Optional)
+  # ====================================================================
+  notify:
+    name: 📢 Send Notification
+    runs-on: ubuntu-latest
+    needs: [summary]
+    if: always() && github.event_name == 'push'
+    
+    steps:
+    - name: 📢 Print status
+      run: |
+        if [ "${{ needs.summary.result }}" = "success" ]; then
+          echo "✅ ✅ ✅ Build PASSED! Green checkmark achieved."
+        else
+          echo "❌ ❌ ❌ Build FAILED! Review the errors and fix them."
+        fi
+
+# ====================================================================
+# END OF WORKFLOW
+# ====================================================================
