@@ -163,3 +163,30 @@ CREATE TABLE Enrolment
         UNIQUE (ParticipantID, EventID)
 );
 GO
+
+
+-- RESULT TABLE --
+   
+
+CREATE TABLE Result
+(
+    ResultID INT IDENTITY(1,1) PRIMARY KEY,
+
+    EnrolmentID INT NOT NULL UNIQUE,
+
+    FinishTime TIME NOT NULL,
+
+    FinishingPosition INT NOT NULL,
+
+    RecordedAt DATETIME2 NOT NULL
+        CONSTRAINT DF_Result_RecordedAt DEFAULT SYSDATETIME(),
+
+    CONSTRAINT FK_Result_Enrolment
+        FOREIGN KEY (EnrolmentID)
+        REFERENCES Enrolment(EnrolmentID)
+        ON DELETE CASCADE,
+
+    CONSTRAINT CK_Result_Position
+        CHECK (FinishingPosition > 0)
+);
+GO
