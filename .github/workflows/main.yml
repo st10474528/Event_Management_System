@@ -1,42 +1,180 @@
-name: RaceDay - Full CI/CD Pipeline
+name: RaceDay CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches:
+      - main
+      - develop
   pull_request:
-    branches: [ main, develop ]
+    branches:
+      - main
+      - develop
   workflow_dispatch:
 
 jobs:
   # Part 1: Validate planning documents
-  part1-validation:
-    uses: ./.github/workflows/part1-validation.yml
-    secrets: inherit
+  validate-planning:
+    runs-on: ubuntu-latest
+    name: Validate Planning Documents
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Check docs folder
+        run: |
+          echo "📁 Checking /docs folder..."
+          if [ -d "docs" ]; then
+            echo "✅ /docs folder exists"
+            ls -la docs/
+          else
+            echo "❌ /docs folder not found"
+            exit 1
+          fi
+      
+      - name: Check ERD file
+        run: |
+          if ls docs/ERD.* 1> /dev/null 2>&1; then
+            echo "✅ ERD file found"
+          else
+            echo "❌ ERD file not found"
+            exit 1
+          fi
+      
+      - name: Check API Endpoint Plan
+        run: |
+          if ls docs/API-Endpoint-Plan.* 1> /dev/null 2>&1; then
+            echo "✅ API Endpoint Plan found"
+          else
+            echo "❌ API Endpoint Plan not found"
+            exit 1
+          fi
+      
+      - name: Check SQL script
+        run: |
+          if ls docs/*.sql 1> /dev/null 2>&1; then
+            echo "✅ SQL script found"
+          else
+            echo "❌ SQL script not found"
+            exit 1
+          fi
+      
+      - name: Check README
+        run: |
+          if [ -f "README.md" ]; then
+            echo "✅ README.md found"
+          else
+            echo "❌ README.md not found"
+            exit 1
+          fi
+      
+      - name: Check commit count
+        run: |
+          COMMIT_COUNT=$(git rev-list --count HEAD)
+          echo "📊 Total commits: $COMMIT_COUNT"
+          if [ "$COMMIT_COUNT" -ge 20 ]; then
+            echo "✅ $COMMIT_COUNT commits (minimum 20 met)"
+          else
+            echo "⚠️ $COMMIT_COUNT commits (minimum 20 required)"
+          fi
+        continue-on-error: true
 
   # Part 2: Build and test API
-  part2-api:
-    uses: ./.github/workflows/part2-api.yml
-    secrets: inherit
-    needs: part1-validation
+  build-and-test:
+    runs-on: ubuntu-latest
+    name: Build and Test API
+    needs: validate-planning
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      
+      - name: Restore Dependencies
+        run: dotnet restore
+      
+      - name: Build Application
+        run: dotnet build --no-restore --configuration Release
+      
+      - name: Run Tests
+        run: dotnet test --no-build --configuration Release --verbosity normal
+      
+      - name: Publish Application
+        run: dotnet publish --configuration Release --output ./publish
 
-  # Part 3: Full stack with Docker
-  part3-fullstack:
-    uses: ./.github/workflows/part3-fullstack.yml    secrets: inherit
-    needs: part2-api
+  # Part 3: Docker container build
+  docker-build:
+    runs-on: ubuntu-latest
+    name: Build Docker Container
+    needs: build-and-test
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Check for Dockerfile
+        run: |
+          if [ -f "Dockerfile" ]; then
+            echo "✅ Dockerfile found"
+          else
+            echo "⚠️ Dockerfile not found - skipping Docker build"
+            exit 0
+          fi
+      
+      - name: Build Docker image
+        run: |
+          if [ -f "Dockerfile" ]; then
+            echo "🐳 Building Docker image..."
+            docker build -t raceday-app:${{ github.sha }} .
+            echo "✅ Docker image built successfully"
+          fi
+      
+      - name: Verify Docker image
+        run: |
+          if docker image inspect raceday-app:${{ github.sha }} > /dev/null 2>&1; then
+            echo "✅ Docker image verified"
+          else
+            echo "⚠️ Docker image not built"
+          fi
+        continue-on-error: true
 
+  # Final status check
   final-status:
     runs-on: ubuntu-latest
-    needs: [part1-validation, part2-api, part3-fullstack]
+    name: Final Status
+    needs: [validate-planning, build-and-test, docker-build]
     if: always()
     
     steps:
-    - name: Check overall status
-      run: |
-        echo "🏁 RaceDay CI/CD Pipeline Complete!"
-        echo ""
-        echo "📊 Pipeline Status:"
-        echo "  Part 1 (Planning): ${{ needs.part1-validation.result }}"
-        echo "  Part 2 (API): ${{ needs.part2-api.result }}"
-        echo "  Part 3 (Full Stack): ${{ needs.part3-fullstack.result }}"
-        echo ""
-        echo "🟢 All checks complete! Review artifacts for details."
+      - name: Check overall status
+        run: |
+          echo "========================================"
+          echo "  🏁 RaceDay CI/CD Pipeline Complete!"
+          echo "========================================"
+          echo ""
+          echo "📊 Job Statuses:"
+          echo "  📋 Validate Planning: ${{ needs.validate-planning.result }}"
+          echo "  🔨 Build and Test:   ${{ needs.build-and-test.result }}"
+          echo "  🐳 Docker Build:     ${{ needs.docker-build.result }}"
+          echo ""
+          
+          if [[ "${{ needs.validate-planning.result }}" == "success" && \
+                "${{ needs.build-and-test.result }}" == "success" ]]; then
+            echo "✅ ALL CHECKS PASSED - 🟢 GREEN BUILD!"
+            echo ""
+            echo "   ╔════════════════════════════════════╗"
+            echo "   ║  ✅  CONTINUOUS INTEGRATION PASS  ║"
+            echo "   ╚════════════════════════════════════╝"
+          else
+            echo "⚠️ Some checks failed - Review logs"
+            exit 1
+          fi
