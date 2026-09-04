@@ -200,3 +200,52 @@ VALUES
     ('Walk'),
     ('Cycle');
 GO
+
+ -- USERS--
+  -- 2 Organisers --
+--   2 Participants --
+  
+
+INSERT INTO [User]
+(
+    FirstName,
+    LastName,
+    Email,
+    PasswordHash,
+    PhoneNumber,
+    Role
+)
+VALUES
+(
+    'Thabo',
+    'Mokoena',
+    'thabo@raceday.co.za',
+    'HASHED_PASSWORD_001',
+    '0821111111',
+    'Organiser'
+),
+(
+    'Lerato',
+    'Mahlangu',
+    'lerato@raceday.co.za',
+    'HASHED_PASSWORD_002',
+    '0832222222',
+    'Organiser'
+),
+(
+    'Tshilidzi',
+    'Ndlovu',
+    'tshilidzi@example.com',
+    'HASHED_PASSWORD_003',
+    '0843333333',
+    'Participant'
+),
+(
+    'Sipho',
+    'Dlamini',
+    'sipho@example.com',
+    'HASHED_PASSWORD_004',
+    '0854444444',
+    'Participant'
+);
+GO
