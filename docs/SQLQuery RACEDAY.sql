@@ -333,3 +333,17 @@ VALUES
 (3, 2, 5, 'Confirmed'),
 (4, 3, 7, 'Pending');
 GO
+
+-- RESULTS --
+
+
+INSERT INTO Result
+(
+    EnrolmentID,
+    FinishTime,
+    FinishingPosition
+)
+VALUES
+(1, '00:52:31', 47),
+(2, '00:55:18', 62);
+GO
