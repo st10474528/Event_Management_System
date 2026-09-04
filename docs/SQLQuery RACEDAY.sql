@@ -315,3 +315,21 @@ VALUES
 (3, 'Under 20', 16, 19, 50.00),
 (3, 'Senior', 20, 39, 50.00);
 GO
+
+
+ -- ENROLMENTS --
+  
+
+INSERT INTO Enrolment
+(
+    ParticipantID,
+    EventID,
+    CategoryID,
+    Status
+)
+VALUES
+(3, 1, 2, 'Confirmed'),
+(4, 1, 2, 'Confirmed'),
+(3, 2, 5, 'Confirmed'),
+(4, 3, 7, 'Pending');
+GO
