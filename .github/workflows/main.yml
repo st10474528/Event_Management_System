@@ -1,126 +1,42 @@
-# CI/CD WORKFLOW – RACEDAY SYSTEM
-
-## 1. Purpose
-
-The RaceDay system uses GitHub Actions to implement Continuous Integration and Continuous Delivery (CI/CD). The workflow automatically checks the application whenever new code is pushed to the repository or a pull request is created.
-
-The workflow performs the following tasks:
-
-1. Checks out the latest source code.
-2. Sets up the .NET development environment.
-3. Restores project dependencies.
-4. Builds the application.
-5. Runs automated tests.
-6. Publishes the application if all checks are successful.
-
-This helps identify errors early and ensures that only successfully built and tested code is prepared for deployment.
-
-## 2. GitHub Actions Workflow
-
-Create the following file in your project:
-
-`.github/workflows/cicd.yml`
-
-```yaml
-name: RaceDay CI/CD
+name: RaceDay - Full CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main
-      - develop
-
+    branches: [ main, develop ]
   pull_request:
-    branches:
-      - main
+    branches: [ main, develop ]
+  workflow_dispatch:
 
 jobs:
+  # Part 1: Validate planning documents
+  part1-validation:
+    uses: ./.github/workflows/part1-validation.yml
+    secrets: inherit
 
-  build-and-test:
-    name: Build and Test RaceDay
+  # Part 2: Build and test API
+  part2-api:
+    uses: ./.github/workflows/part2-api.yml
+    secrets: inherit
+    needs: part1-validation
+
+  # Part 3: Full stack with Docker
+  part3-fullstack:
+    uses: ./.github/workflows/part3-fullstack.yml    secrets: inherit
+    needs: part2-api
+
+  final-status:
     runs-on: ubuntu-latest
-
+    needs: [part1-validation, part2-api, part3-fullstack]
+    if: always()
+    
     steps:
-
-      # Get the source code from GitHub
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      # Install .NET
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-
-      # Restore project dependencies
-      - name: Restore Dependencies
-        run: dotnet restore
-
-      # Build the application
-      - name: Build Application
-        run: dotnet build --no-restore --configuration Release
-
-      # Run automated tests
-      - name: Run Tests
-        run: dotnet test --no-build --configuration Release
-
-      # Publish the application
-      - name: Publish Application
-        run: dotnet publish --configuration Release --output ./publish
-
-      # Store published files as an artifact
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: RaceDay-Application
-          path: ./publish
-```
-
-## 3. Workflow Explanation
-
-### Continuous Integration
-
-The CI part of the workflow is triggered when developers push code to the `main` or `develop` branches or create a pull request to the `main` branch.
-
-The workflow:
-
-* Checks out the latest code.
-* Restores dependencies.
-* Compiles the RaceDay application.
-* Runs automated tests.
-
-If the build or tests fail, GitHub Actions reports the failure so that the developer can correct the problem before the code is merged.
-
-### Continuous Delivery
-
-After the application successfully builds and passes its tests, the workflow uses `dotnet publish` to create a release-ready version of the application.
-
-The published application is then uploaded as a GitHub Actions artifact called:
-
-`RaceDay-Application`
-
-This artifact can later be downloaded or used by a deployment workflow to deploy the application to a production server or cloud platform.
-
-## 4. CI/CD Process
-
-The RaceDay CI/CD process can be represented as:
-
-**Developer → GitHub Repository → Build → Test → Publish → Deployment**
-
-If any build or test fails:
-
-**Developer → Fix Code → Push Again → Build → Test**
-
-This ensures that errors are detected before the application is delivered to users.
-
-## 5. Benefits
-
-The CI/CD workflow provides the following benefits:
-
-* **Automated testing:** Tests are executed automatically.
-* **Early error detection:** Build and coding problems are identified quickly.
-* **Consistent builds:** Every build follows the same automated process.
-* **Faster development:** Developers do not need to manually perform every build and test.
-* **Improved reliability:** Only code that successfully builds and passes tests is published.
-* **Traceability:** GitHub Actions records the result of every workflow execution.
-* **Easy deployment:** The published artifact can be used for future automated deployment.
+    - name: Check overall status
+      run: |
+        echo "🏁 RaceDay CI/CD Pipeline Complete!"
+        echo ""
+        echo "📊 Pipeline Status:"
+        echo "  Part 1 (Planning): ${{ needs.part1-validation.result }}"
+        echo "  Part 2 (API): ${{ needs.part2-api.result }}"
+        echo "  Part 3 (Full Stack): ${{ needs.part3-fullstack.result }}"
+        echo ""
+        echo "🟢 All checks complete! Review artifacts for details."
