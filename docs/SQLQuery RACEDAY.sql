@@ -249,3 +249,46 @@ VALUES
     'Participant'
 );
 GO
+
+--  EVENTS --
+ 
+
+INSERT INTO Event
+(
+    OrganiserID,
+    EventTypeID,
+    Name,
+    Description,
+    EventDate,
+    Location,
+    Distance
+)
+VALUES
+(
+    1,
+    1,
+    'Johannesburg City Run',
+    'A road running event through Johannesburg.',
+    '2026-10-10',
+    'Johannesburg',
+    10.00
+),
+(
+    1,
+    2,
+    'Soweto Community Walk',
+    'A community walking event in Soweto.',
+    '2026-10-24',
+    'Soweto',
+    5.00
+),
+(
+    2,
+    3,
+    'Gauteng Cycle Challenge',
+    'A cycling event for participants across Gauteng.',
+    '2026-11-07',
+    'Pretoria',
+    50.00
+);
+GO
