@@ -227,6 +227,7 @@ Build Requirements:
 ✅ Green build status achieved
 
 🎥 Video Presentation
+https://youtu.be/_S5EybEQP-M
 Part 1 Video Walkthrough
 Watch the complete walkthrough of Part 1, including:
 
