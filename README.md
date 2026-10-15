@@ -404,6 +404,68 @@ CI/CD screenshot
 YouTube video link
 
 
+# RaceDay API — Part 2
+
+A RESTful API for the RaceDay event management system, built with ASP.NET Core 8,
+Entity Framework Core, and SQL Server. Designed for the South African road running,
+walking, and cycling community.
+
+---
+
+## System Description
+
+RaceDay allows Event Organisers to create and manage events, categories, and
+participant results, while Participants can browse events, enter events by
+category, track their personal enrolments, and view their race history.
+
+This repository contains **Part 2** — the RESTful API that powers the entire
+RaceDay platform. The MVC front end will be built in Part 3.
+
+---
+
+## Roles
+
+| Role | Capabilities |
+|---|---|
+| **Organiser** | Create, edit, and delete events; manage categories; view all enrolments for their events; capture participant results |
+| **Participant** | Register and log in; browse events; enrol in an event by selecting a category; view own enrolments; view own race results; update their profile |
+
+Role-based access is enforced at the API level via a custom `RoleFilter` that
+returns **403 Forbidden** when the logged-in user's role does not match the
+endpoint's requirement.
+
+---
+
+## Tech Stack
+
+- ASP.NET Core 8 Web API
+- Entity Framework Core 8 (Code First)
+- SQL Server / SQL Server LocalDB
+- BCrypt.Net for password hashing
+- Session-based authentication (`HttpOnly` cookie)
+- Swagger / Swashbuckle for API documentation
+- xUnit for unit tests
+- GitHub Actions for CI/CD
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Visual Studio 2022 with the **ASP.NET and web development** workload
+- .NET 8 SDK
+- SQL Server LocalDB (comes with Visual Studio) or SQL Server Express
+- SQL Server Management Studio (optional, for inspection)
+
+### Setup
+
+1. **Clone the repository**
+
+   ```bash
+   git clone <your-repo-url>
+   cd RaceDayAPI
+
 📄 License
 This project is created for educational purposes as part of the [Course Name] Portfolio of Evidence.
 
